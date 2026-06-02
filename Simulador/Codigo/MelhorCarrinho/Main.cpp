@@ -11,6 +11,8 @@
 
 EdubotLib *edubotLib = new EdubotLib();
 
+const float distanciaMinima = 0.2;
+
 class Robo {
     public:
         struct posicaoRobo {
@@ -29,14 +31,15 @@ class Robo {
         }dados;
 
         void movimentacao();
-        void movimentaQuadrados(int quantLados);
         int colisao();
+        void colheSonar();
+        void andaRobo();
 };
 
 int Robo::colisao(){
     for(int x = 0; x < QT_BUMPERS; x++){
         // Correção: mudado de 'i' para 'x' para bater com a variável do loop
-        this->dados.bumpers[x] = edubotLib->getBumper(x); 
+        this->dados.bumpers[x] = edubotLib->getBumper(x);
         
         if(this->dados.bumpers[x] == true){
             return true; // Retorna verdadeiro se qualquer bumper bateu
@@ -45,80 +48,41 @@ int Robo::colisao(){
     return false; // Correção: Faltava um retorno padrão caso não colida com nada
 }
 
-void Robo::movimentaQuadrados(int quantLados){
-    
-    for(int x = 1; x <= quantLados; x++){ // Correção: alterado para '<=' para rodar a quantidade exata de lados
-        for(int y = 0; y < 4; y++){
-            
+void Robo::colheSonar(void){
+		
+}
+
+void Robo::andaRobo(){
             // Atualiza o estado de colisão na struct do robô
             this->dados.colidindo = this->colisao();
             
             if(!this->colisao()) {
-                edubotLib->move(0.9);        
-                edubotLib->sleepMilliseconds(500 * x);
-        
-                edubotLib->rotate(90);
-                edubotLib->sleepMilliseconds(2000);
+            	 do{
+	               edubotLib->move(0.2);        
+	               edubotLib->sleepMilliseconds(50);
+	               std::cout << "Sonar " << 3 << ": " << edubotLib->getSonar(3) << "m, ";
+	               for (int i=2; i<=4; i++) {
+					this->dados.sonares[i] = edubotLib->getSonar(i);
+					std::cout << "Sonar " << i << ": " << edubotLib->getSonar(i) << "m, ";
+		}
+            	 }while(edubotLib->getSonar(3)>distanciaMinima);
             } else {
                 // Se colidir, para o robô por segurança
                 edubotLib->neutral();
-                edubotLib->sleepMilliseconds(2000);
                 std::cout << "Colisao detectada!\n Movimento interrompido." << std::endl;
+                edubotLib->sleepMilliseconds(2000);
                 return; // Sai da função
             }
+            edubotLib->neutral();
         }
-    }
-}
 
 int main(void){
 	//instancia objeto dentro da main e nomeia;
 	Robo roboAtual;
 	//Tenta conectar Robo
 	if(edubotLib->connect()){
-
-		// shows edubot sensors
-		int showSensorsTimes = 5;
-		while (showSensorsTimes > 0) {
-			
-			edubotLib->sleepMilliseconds(500);
-
-			// Colhe info dos Sonares - For para colher a info dos 7 sonares em um loop, e retorna a medida em metros;
-			for (int i=0; i<7; i++) {
-				std::cout << "Sonar " << i << ": " << edubotLib->getSonar(i) << "m, ";
-			}
-			std::cout << "\n";
-			// Colhe info dos Bumpers - sensores ativados na batida - resposta booleana (true/false)
-			for (int i=0; i<4; i++) {
-				std::cout << "Bumpers" << i << ": " << (edubotLib->getBumper(i) == true? "true":"false") << ", ";
-			}
-			std::cout << "\n";
-			//Colhe info dos Encoders
-			std::cout << "Encoder lado esquerdo: " << edubotLib->getEncoderCountLeft() << ", ";
-			std::cout << "Encoder lado direito: " << edubotLib->getEncoderCountRight() << ", ";
-			std::cout << "dt(looptime): " << edubotLib->getEncoderCountDT() << ", ";
-			std::cout << "\n";
-			//Medida caluclada do eixo X,Y e do Theta para localização
-			std::cout << "Cordenada X: " << edubotLib->getX() << ", ";
-			std::cout << "Cordenada Y: " << edubotLib->getY() << ", ";
-			std::cout << "Rotacao Theta: " << edubotLib->getTheta() << ", ";
-			std::cout << "\n";
-
-			//Colhe as informações corelacionadas a 3 celulas de materia
-			for (int i=0; i<3; i++){
-			std::cout << "Celula de Bateria " << i << ": "<< edubotLib->getBatteryCellVoltage(i) << "V, ";
-			}
-			std::cout << "\n";
-			std::cout << "\n";
-
-			// line break
-			std::cout << std::endl;
-
-			showSensorsTimes--;
-
-		}
-		//chamando metodo(função) - movimentaQuadrados vou colocar 4;
-		roboAtual.movimentaQuadrados(4);
-		
+		//chamando metodo(função) - movimentaQuadrados vou colocar 4;	
+		roboAtual.andaRobo();
 		//Disconecta Robo
 		edubotLib->disconnect();
 	}
